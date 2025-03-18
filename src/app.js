@@ -25,6 +25,10 @@ app.delete("/users/delete", userAuth, (req, res) => {
   res.send("You can delete your data");
 });
 
+app.use("/", (err, req, res, next) => {
+  res.status(500).send("Something went wrong");
+});
+
 app.listen(3000, () => {
   console.log("server running at port 3000");
 });
