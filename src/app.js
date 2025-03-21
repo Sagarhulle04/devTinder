@@ -2,18 +2,58 @@ const express = require("express");
 const connectDB = require("./config/database.js");
 const app = express();
 const User = require("./models/user.js");
+const validateSignUpData = require("./utils/validation.js");
+const bcrypt = require("bcrypt");
+const user = require("./models/user.js");
+const validator = require("validator");
 
 // used to convert json into js object when taking req.body from end user
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-  const user = new User(req.body);
-
   try {
-    await user.save();
+    // validating the data
+    validateSignUpData(req);
+    const { firstName, lastName, email, password } = req.body;
+
+    const hashPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashPassword,
+    });
+
+    await user.save({});
     res.send("user added successfully");
   } catch (err) {
     res.status(400).send("error while saving the user: " + err.message);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email: email });
+
+    if (!user) {
+      throw new Error("Invalid Credentials");
+    }
+
+    if (!validator.isEmail(email)) {
+      throw new Error("mail id should contain @");
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      throw new Error("Invalid Credentials");
+    }
+    res.send("Login Successfull");
+  } catch (error) {
+    res.status(400).send("Error : " + error.message);
   }
 });
 
@@ -48,8 +88,6 @@ app.delete("/user", async (req, res) => {
 });
 
 app.patch("/user/:id", async (req, res) => {
-  const data = req.body;
-
   try {
     const ALLOWED_UPDATES = [
       "firstName",
