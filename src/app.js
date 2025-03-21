@@ -44,13 +44,37 @@ app.delete("/user", async (req, res) => {
   }
 });
 
-app.patch("/user", async (req, res) => {
-  const userEmail = req.body.email;
+app.patch("/user/:id", async (req, res) => {
+  const data = req.body;
+
   try {
-    await User.findOneAndUpdate({ email: userEmail }, req.body);
+    const ALLOWED_UPDATES = [
+      "firstName",
+      "lastName",
+      "age",
+      "password",
+      "gender",
+      "about",
+      "skills",
+    ];
+
+    const updateAllowed = Object.keys(data).every((k) =>
+      ALLOWED_UPDATES.includes(k)
+    );
+    if (!updateAllowed) {
+      throw new Error("updation failed");
+    }
+
+    if (data?.skills.length > 4) {
+      throw new Error("Skills cannot be greater than 4");
+    }
+
+    await User.findByIdAndUpdate(req.body._id, req.body, {
+      runValidators: true,
+    });
     res.send("user updated successfully");
   } catch (error) {
-    res.status(400).send("something went wrong");
+    res.status(400).send("something went wrong" + error.message);
   }
 });
 
