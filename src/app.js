@@ -13,26 +13,29 @@ app.post("/signup", async (req, res) => {
     await user.save();
     res.send("user added successfully");
   } catch (err) {
-    console.log("error while saving the user");
+    res.status(400).send("error while saving the user: " + err.message);
   }
 });
 
 app.get("/user", async (req, res) => {
-  const userId = req.body._id; // Ensure userId is obtained from request body
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(req.body._id);
     if (!user) {
       return res.status(400).send("user not found");
     }
     res.send(user);
   } catch (error) {
-    res.status(500).send("Something went wrong");
+    res.status(500).send("Something went wrong: " + error.message);
   }
 });
 
 app.get("/feed", async (req, res) => {
-  const users = await User.find();
-  res.send(users);
+  try {
+    const users = await User.find();
+    res.send(users);
+  } catch (error) {
+    res.status(500).send("Something went wrong: " + error.message);
+  }
 });
 
 app.delete("/user", async (req, res) => {
@@ -40,7 +43,7 @@ app.delete("/user", async (req, res) => {
     await User.findByIdAndDelete(req.body._id);
     res.send("user deleted successfully");
   } catch (err) {
-    res.status(500).send("something went wrong");
+    res.status(500).send("something went wrong: " + err.message);
   }
 });
 
@@ -65,16 +68,16 @@ app.patch("/user/:id", async (req, res) => {
       throw new Error("updation failed");
     }
 
-    if (data?.skills.length > 4) {
+    if (data.skills && data.skills.length > 4) {
       throw new Error("Skills cannot be greater than 4");
     }
 
-    await User.findByIdAndUpdate(req.body._id, req.body, {
+    await User.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
     });
     res.send("user updated successfully");
   } catch (error) {
-    res.status(400).send("something went wrong" + error.message);
+    res.status(400).send("something went wrong: " + error.message);
   }
 });
 
@@ -86,5 +89,5 @@ connectDB()
     });
   })
   .catch((err) => {
-    console.log("Database connection failed", err);
+    console.log("Database connection failed: " + err.message);
   });
